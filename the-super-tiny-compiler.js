@@ -41,13 +41,7 @@ function tokenizer(input) {
       continue;
     }
 
-    // Moving on, we're now going to check for whitespace. This is interesting
-    // because we care that whitespace exists to separate characters, but it
-    // isn't actually important for us to store as a token. We would only throw
-    // it out later.
-    //
-    // So here we're just going to test for existence and if it does exist we're
-    // going to just `continue` on.
+    // \s 是匹配所有空白符
     let WHITESPACE = /\s/;
     if (WHITESPACE.test(char)) {
       current++;
