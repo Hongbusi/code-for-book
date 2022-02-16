@@ -1,0 +1,14 @@
+{
+  "name": "rollup-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup input.js -f esm -o build.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "rollup": "^2.67.2"
+  }
+}
