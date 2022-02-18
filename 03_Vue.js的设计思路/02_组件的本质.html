@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    const MyChildrenComponent = {
+      render() {
+        return {
+          tag: 'div',
+          props: {
+            onClick: () => alert('hello MyChildrenComponent')
+          },
+          children: 'click me'
+        }
+      }
+    }
+
+    const MyComponent = function() {
+      return {
+        tag: 'div',
+        props: {
+          onClick: () => alert('hello MyComponent')
+        },
+        children: [
+          { tag: MyChildrenComponent }
+        ]
+      }
+    }
+
+    const vnode = {
+      tag: MyComponent
+    }
+
+    function renderer(vnode, container) {
+      if (typeof vnode.tag === 'string') {
+        // 说明 vnode 描述的是标签元素
+        mountElement(vnode, container)
+      } else if (typeof vnode.tag === 'function' || typeof vnode.tag === 'object') {
+        // 说明 vnode 描述的是组件
+        mountComponent(vnode, container)
+      }
+    }
+
+    function mountElement(vnode, container) {
+      const el = document.createElement(vnode.tag)
+
+      for (const key in vnode.props) {
+        if (/^on/.test(key)) {
+          el.addEventListener(
+            key.substr(2).toLowerCase(),
+            vnode.props[key]
+          )
+        }
+      }
+
+      if (typeof vnode.children === 'string') {
+        el.appendChild(document.createTextNode(vnode.children))
+      } else if (Array.isArray(vnode.children)) {
+        vnode.children.forEach(child => renderer(child, el))
+      }
+
+      container.appendChild(el)
+    }
+
+    function mountComponent(vnode, container) {
+      let subtree = null
+      if (typeof vnode.tag === 'function') {
+        subtree = vnode.tag()
+      } else if (typeof vnode.tag === 'object') {
+        subtree = vnode.tag.render()
+      }
+      renderer(subtree, container)
+    }
+
+    renderer(vnode, document.body)
+  </script>
+</body>
+</html>
