@@ -8,13 +8,13 @@
 </head>
 <body>
   <script>
-    let activeEffect = undefined
+    const data = { ok: true, text: 'hello world' }
+
     const bucket = new WeakMap()
-    const data = { name: 'hello world' }
+    let activeEffect = undefined
     const obj = new Proxy(data, {
       get(target, key) {
         track(target, key)
-
         return target[key]
       },
 
@@ -25,39 +25,56 @@
     })
 
     function track(target, key) {
-      if (!activeEffect) return
+      if (!activeEffect) return target[key]
       let depsMap = bucket.get(target)
       if (!depsMap) {
         bucket.set(target, (depsMap = new Map()))
       }
-
       let deps = depsMap.get(key)
       if (!deps) {
         depsMap.set(key, (deps = new Set()))
       }
-
       deps.add(activeEffect)
+      activeEffect.deps.push(deps)
     }
 
     function trigger(target, key) {
       const depsMap = bucket.get(target)
       if (!depsMap) return
-      const effect = depsMap.get(key)
-      effect && effect.forEach(fn => fn())
+      const effects = depsMap.get(key)
+
+      const effectsToRun = new Set(effects)
+      effectsToRun.forEach(effectFn => effectFn())
     }
 
     function effect(fn) {
-      activeEffect = fn
-      fn()
+      const effectFn = () => {
+        cleanup(effectFn)
+        activeEffect = effectFn
+        fn()
+      }
+      effectFn.deps = []
+      effectFn()
+    }
+
+    function cleanup(effectFn) {
+      for (let i = 0; i < effectFn.deps.length; i++) {
+        const deps = effectFn.deps[i]
+        deps.delete(effectFn)
+      }
+
+      effectFn.deps.length = 0
     }
 
     effect(() => {
-      console.log(obj.name)
+      console.log('effect run')
+      document.body.innerText = obj.ok ? obj.text : 'not'
     })
 
     setTimeout(() => {
-      obj.age = '1'
-    }, 100)
+      obj.ok = false
+      obj.text = 'hello vue'
+    }, 1000)
   </script>
 </body>
 </html>
