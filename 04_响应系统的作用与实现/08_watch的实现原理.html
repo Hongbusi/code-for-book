@@ -10,7 +10,7 @@
   <script>
     const bucket = new WeakMap()
 
-    const data = { foo: 1, bar: 3 }
+    const data = { foo: 1, bar: 2 }
 
     const obj = new Proxy(data, {
       get(target, key) {
@@ -92,49 +92,54 @@
       effectFn.deps.length = 0
     }
 
-    function computed(getter) {
-      let value
-      let dirty = true
-      const effectFn = effect(getter, {
-        lazy: true,
-        scheduler() {
-          if (!dirty) {
-            dirty = true
-            trigger(obj, 'value')
-          }
-        }
-      })
 
-      const obj = {
-        get value() {
-          if (dirty) {
-            value = effectFn()
-            dirty = false
-          }
-          track(obj, 'value')
-          return value
-        }
+    function watch(source, cb) {
+      let getter
+      if (typeof source === 'function') {
+        getter = source
+      } else {
+        getter = () => traverse(source)
       }
-
-      return obj
+      let oldValue, newValue
+      const effectFn = effect(
+        () => getter(),
+        {
+          lazy: true,
+          scheduler() {
+            newValue = effectFn()
+            cb(newValue, oldValue)
+            oldValue = newValue
+          }
+        }
+      )
+      oldValue = effectFn()
     }
 
-    const sumRes = computed(() => obj.foo + obj.bar)
+    function traverse(value, seen = new Set()) {
+      if (typeof value !== 'object' || value === null || seen.has(value)) return
+      seen.add(value)
+      // 只考虑对象
+      for (const key in value) {
+        traverse(value[key], seen)
+      }
+      return value
+    }
 
-    effect(() => console.log(sumRes.value))
+    // 1. 观测响应式数据
+    // watch(obj, () => {
+    //   console.log('数据变化了')
+    // })
 
-    console.log(sumRes.value)
-    console.log(sumRes.value)
+    // 2. 接受一个 getter 函数
+    watch(
+      () => obj.foo,
+      (newVlaue, oldValue) => {
+        console.log('数据变化了', newVlaue, oldValue)
+      }
+    )
 
     obj.foo++
-
-    console.log(sumRes.value)
-
-    effect(() => {
-      console.log(sumRes.value)
-    })
-
-    obj.foo++
+    obj.bar++
   </script>
 </body>
 </html>
