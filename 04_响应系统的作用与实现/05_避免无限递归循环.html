@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    const data = { foo: 1 }
+
+    let activeEffect = undefined
+    const effectStack = []
+    const bucket = new WeakMap()
+    const obj = new Proxy(data, {
+      get(target, key) {
+        track(target, key)
+        return target[key]
+      },
+
+      set(target, key, newValue) {
+        target[key] = newValue
+        trigger(target, key)
+      }
+    })
+
+    function track(target, key) {
+      if (!activeEffect) return target[key]
+
+      let depsMap = bucket.get(target)
+      if (!depsMap) {
+        bucket.set(target, (depsMap = new Map()))
+      }
+
+      let deps = depsMap.get(key)
+      if (!deps) {
+        depsMap.set(key, (deps = new Set()))
+      }
+
+      deps.add(activeEffect)
+      activeEffect.deps.push(deps)
+    }
+
+    function trigger(target, key) {
+      const depsMap = bucket.get(target)
+      if (!depsMap) return
+      const effects = depsMap.get(key)
+      const effectsToRun = new Set()
+      effects && effects.forEach(effectFn => {
+        if (effectFn !== activeEffect) {
+          effectsToRun.add(effectFn)
+        }
+      })
+      effectsToRun.forEach(effectFn => effectFn())
+    }
+
+    function effect(fn) {
+      const effectFn = () => {
+        cleanup(effectFn)
+        activeEffect = effectFn
+        effectStack.push(effectFn)
+        fn()
+        effectStack.pop()
+        activeEffect = effectStack[effectStack.length - 1]
+      }
+      effectFn.deps = []
+      effectFn()
+    }
+
+    function cleanup(effectFn) {
+      for (let i = 0; i < effectFn.deps.length; i++) {
+        const deps = effectFn.deps[i]
+        deps.delete(effectFn)
+      }
+
+      effectFn.deps.length = 0
+    }
+
+    let temp1, temp2
+
+    effect(() => {
+      obj.foo++
+    })
+  </script>
+</body>
+</html>
