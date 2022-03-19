@@ -3,6 +3,9 @@
   "rules": {
     "no-console": "off",
     "prefer-arrow-callback": "off",
-    "no-var": "off"
+    "no-var": "off",
+    "vars-on-top": "off",
+    "no-extend-native": "off",
+    "prefer-rest-params": "off"
   }
 }
