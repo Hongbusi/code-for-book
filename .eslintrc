@@ -1,6 +1,8 @@
 {
   "extends": "@hongbusi/eslint-config-basic",
   "rules": {
-    "no-console": "off"
+    "no-console": "off",
+    "prefer-arrow-callback": "off",
+    "no-var": "off"
   }
 }
